@@ -1,5 +1,8 @@
 # Book-Stock-System
 
+docker start postgres-library
+./mvnw spring-boot:run
+
 Funcionalidades:
 
 Admin
