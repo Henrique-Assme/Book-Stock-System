@@ -3,6 +3,7 @@ package com.library.book_stock.controller;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +30,7 @@ public class BookController {
 
     @GetMapping
     public List<Book> getAllBooks() {
-        return bookRepository.findAll();
+        return bookRepository.findAll(Sort.by(Sort.Direction.ASC, "title"));
     }
 
     @GetMapping("/{id}")
@@ -76,16 +77,22 @@ public class BookController {
             return ResponseEntity.status(404).body(response);
         }
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<BookResponse> decrementExistingBook(@PathVariable Long id) {
         Optional<Book> existingBook = bookRepository.findById(id);
 
         if (existingBook.isPresent()) {
             Book bookToUpdate = existingBook.get();
-            bookToUpdate.setStockQuantity(bookToUpdate.getStockQuantity() - 1);
-            Book updatedBook = bookRepository.save(bookToUpdate);
-            BookResponse response = new BookResponse("Quantidade atualizada!", updatedBook);
+            if (bookToUpdate.getStockQuantity() > 0) {
+                bookToUpdate.setStockQuantity(bookToUpdate.getStockQuantity() - 1);
+                Book updatedBook = bookRepository.save(bookToUpdate);
+                BookResponse response = new BookResponse("Quantidade atualizada!", updatedBook);
+                return ResponseEntity.status(200).body(response);
+            }
+
+            bookRepository.deleteById(id);
+            BookResponse response = new BookResponse("Livro removido!", null);
             return ResponseEntity.status(200).body(response);
         } else {
             BookResponse response = new BookResponse("Livro não encontrado", null);
@@ -97,7 +104,7 @@ public class BookController {
     public ResponseEntity<BookResponse> editBookProperty(@PathVariable Long id, @RequestBody Book updatedBook) {
         Optional<Book> existingBook = bookRepository.findById(id);
 
-        if(existingBook.isPresent()) {
+        if (existingBook.isPresent()) {
             Book book = existingBook.get();
             book.setAuthor(updatedBook.getAuthor());
             book.setTitle(updatedBook.getTitle());
